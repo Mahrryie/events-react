@@ -31,7 +31,7 @@ export default function EventForm({ inputData, onSubmit, children }) {
   }
 
   return (
-    <form id="event-form" onSubmit={handleSubmit}>
+    <form id="event-form" onSubmit={handleSubmit} method="dialog">
       <p className="control">
         <label htmlFor="title">Title</label>
         <input

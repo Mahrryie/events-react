@@ -1,8 +1,11 @@
+import { QueryClient } from "@tanstack/react-query";
+
+export const queryClient = new QueryClient();
+
 export async function fetchEvents({ searchTerm }) {
   let url = "http://localhost:3000/events";
 
   if (searchTerm) {
-    // console.log("search", search);
     url += "?search=" + searchTerm;
   }
   const response = await fetch(url);
@@ -52,4 +55,33 @@ export async function fetchImages() {
 
   const { images } = await response.json();
   return images;
+}
+
+export async function fetchEvent({ eventId }) {
+  const response = await fetch(`http://localhost:3000/events/${eventId}`);
+
+  if (!response.ok) {
+    const error = new Error("An error occurred while fetching the event");
+    error.code = 500;
+    error.info = await error.json();
+    throw error;
+  }
+
+  const { event } = await response.json();
+  return event;
+}
+
+export async function deleteEvent({ eventId }) {
+  const response = await fetch(`http://localhost:3000/events/${eventId}`, {
+    method: "DELETE",
+  });
+
+  if (!response.ok) {
+    const error = new Error("An error occurred while deleting the event");
+    error.code = 500;
+    error.info = await error.json();
+    throw error;
+  }
+
+  return response.json();
 }
