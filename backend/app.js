@@ -79,7 +79,7 @@ app.post("/events", async (req, res) => {
   const { event } = req.body;
 
   if (!event) {
-    return res.status(400).json({ message: "Event is required" });
+    return res.status(400).json({ message: req.body });
   }
 
   console.log(event);
