@@ -1,5 +1,13 @@
 import { QueryClient } from "@tanstack/react-query";
 
+class CustomError extends Error {
+  constructor(message, code, info) {
+    super(message);
+    this.code = code;
+    this.info = info;
+  }
+}
+
 export const queryClient = new QueryClient();
 
 export async function fetchEvents({ searchTerm }) {
@@ -11,10 +19,12 @@ export async function fetchEvents({ searchTerm }) {
   const response = await fetch(url);
 
   if (!response.ok) {
-    const error = new Error("An error occurred while fetching the events");
-    error.code = response.status;
-    error.info = await response.json();
-    throw error;
+    const info = await response.json();
+    throw new CustomError(
+      "An error occurred while fetching the events",
+      response.status,
+      info
+    );
   }
 
   const { events } = await response.json();
@@ -32,10 +42,12 @@ export async function createNewEvent({ newEvent }) {
   });
 
   if (!response.ok) {
-    const error = new Error("An error occurred while creating an event");
-    error.code = 500;
-    error.info = await response.json();
-    throw error;
+    const info = await response.json();
+    throw new CustomError(
+      "An error occurred while creating an event",
+      500,
+      info
+    );
   }
 
   const { event } = await response.json();
@@ -46,11 +58,8 @@ export async function fetchImages() {
   const response = await fetch("http://localhost:3000/events/images");
 
   if (!response.ok) {
-    const error = new Error("An error while fetching images");
-    error.code = 500;
-    error.info = await response.json();
-
-    throw error;
+    const info = await response.json();
+    throw new CustomError("An error while fetching images", 500, info);
   }
 
   const { images } = await response.json();
@@ -61,10 +70,12 @@ export async function fetchEvent({ eventId }) {
   const response = await fetch(`http://localhost:3000/events/${eventId}`);
 
   if (!response.ok) {
-    const error = new Error("An error occurred while fetching the event");
-    error.code = 500;
-    error.info = await error.json();
-    throw error;
+    const info = await response.json();
+    throw new CustomError(
+      "An error occurred while fetching the event",
+      500,
+      info
+    );
   }
 
   const { event } = await response.json();
@@ -84,4 +95,21 @@ export async function deleteEvent({ eventId }) {
   }
 
   return response.json();
+}
+
+export async function editEvent({ eventId, updatedEvent }) {
+  const response = await fetch(`http://localhost:3000/events/${eventId}`, {
+    method: "PUT",
+    headers: { "Content-type": "application/json" },
+    body: JSON.stringify({ event: updatedEvent }),
+  });
+
+  if (!response.ok) {
+    const info = await response.json();
+    throw new CustomError("Error while editing event", 500, info);
+  }
+
+  const { event } = await response.json();
+
+  return event;
 }

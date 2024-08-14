@@ -44,7 +44,6 @@ export default function EventDetails() {
 
   const handleDelete = () => {
     mutate({ eventId: params.id });
-    setIsDeleting(false);
   };
 
   let content;
@@ -111,6 +110,7 @@ export default function EventDetails() {
           <h2>Are you sure?</h2>
           <p>Do you really want to delete this event?</p>
           <div className="form-actions">
+            {isDeletePending && "Deleting, please wait"}
             <button className="button-text" onClick={handleStopDeleting}>
               Cancel
             </button>
@@ -118,6 +118,15 @@ export default function EventDetails() {
               Delete
             </button>
           </div>
+          {isErrorDelete && (
+            <ErrorBlock
+              title="Failed to delete"
+              message={
+                errorDelete.info?.message ||
+                "An error while deleting the event."
+              }
+            />
+          )}
         </Modal>
       )}
       <Outlet />
@@ -127,14 +136,6 @@ export default function EventDetails() {
         </Link>
       </Header>
       {content}
-      {isErrorDelete && (
-        <ErrorBlock
-          title="Error ocurred"
-          message={
-            errorDelete.info?.message || "An error while deleting the event"
-          }
-        />
-      )}
     </>
   );
 }
