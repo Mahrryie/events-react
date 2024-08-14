@@ -1,60 +1,89 @@
 import { Link, Outlet, useNavigate, useParams } from "react-router-dom";
 
 import { useMutation, useQuery } from "@tanstack/react-query";
+import { useState } from "react";
 import { deleteEvent, fetchEvent, queryClient } from "../../util/http.js";
 import Header from "../Header.jsx";
 import ErrorBlock from "../UI/ErrorBlock.jsx";
+import Modal from "../UI/Modal.jsx";
 
 export default function EventDetails() {
+  const [isDeleting, setIsDeleting] = useState(false);
   const params = useParams();
   const navigate = useNavigate();
 
   const { data, isLoading, isError, error } = useQuery({
-    queryKey: ["event-detail"],
+    queryKey: ["events", params.id],
     queryFn: () => fetchEvent({ eventId: params.id }),
   });
 
   const {
     mutate,
-    isPending,
+    isPending: isDeletePending,
     isError: isErrorDelete,
     error: errorDelete,
   } = useMutation({
     mutationFn: deleteEvent,
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["events"] });
+      queryClient.invalidateQueries({
+        queryKey: ["events"],
+        refetchType: "none",
+      });
+      setIsDeleting(false);
       navigate("/events");
     },
   });
 
-  const handleDelete = () => {
-    mutate({ eventId: params.id });
+  const handleStartDeleting = () => {
+    setIsDeleting(true);
   };
 
-  return (
-    <>
-      <Outlet />
-      <Header>
-        <Link to="/events" className="nav-item">
-          View all Events
-        </Link>
-      </Header>
-      {isLoading && <p>Loading...</p>}
-      {isError && (
+  const handleStopDeleting = () => {
+    setIsDeleting(false);
+  };
+
+  const handleDelete = () => {
+    mutate({ eventId: params.id });
+    setIsDeleting(false);
+  };
+
+  let content;
+
+  if (isLoading) {
+    content = (
+      <div id="event-details-content" className="center">
+        <p>Loading event data</p>
+      </div>
+    );
+  }
+
+  if (isError) {
+    content = (
+      <div id="event-details-content" className="center">
         <ErrorBlock
           title="Error while fetching the event"
           message={
             error.info?.message || "Some error happened, try again later"
           }
         />
-      )}
-      {data && (
+      </div>
+    );
+  }
+
+  if (data) {
+    const formattedDate = new Date(data.date).toLocaleDateString("en-US", {
+      day: "numeric",
+      month: "long",
+      year: "numeric",
+    });
+    content = (
+      <>
         <article id="event-details">
           <header>
             <h1>{data.title}</h1>
             <nav>
-              <button onClick={handleDelete}>
-                {isPending ? "Deleting..." : "Delete"}
+              <button onClick={handleStartDeleting}>
+                {isDeletePending ? "Deleting..." : "Delete"}
               </button>
               <Link to="edit">Edit</Link>
             </nav>
@@ -65,14 +94,39 @@ export default function EventDetails() {
               <div>
                 <p id="event-details-location">{data.location}</p>
                 <time dateTime={`Todo-DateT$Todo-Time`}>
-                  {data.date} at {data.time}
+                  {formattedDate} at {data.time}
                 </time>
               </div>
               <p id="event-details-description">{data.description}</p>
             </div>
           </div>
         </article>
+      </>
+    );
+  }
+  return (
+    <>
+      {isDeleting && (
+        <Modal onClose={handleStopDeleting}>
+          <h2>Are you sure?</h2>
+          <p>Do you really want to delete this event?</p>
+          <div className="form-actions">
+            <button className="button-text" onClick={handleStopDeleting}>
+              Cancel
+            </button>
+            <button className="button-text" onClick={handleDelete}>
+              Delete
+            </button>
+          </div>
+        </Modal>
       )}
+      <Outlet />
+      <Header>
+        <Link to="/events" className="nav-item">
+          View all Events
+        </Link>
+      </Header>
+      {content}
       {isErrorDelete && (
         <ErrorBlock
           title="Error ocurred"
